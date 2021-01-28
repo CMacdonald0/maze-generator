@@ -8,8 +8,13 @@
 #include <vector>
 #include <map>
 
-// Boarders around the grid squares are 3 pixel width or height and the squares are 8*8
+struct Maze
+{
+    SDL_Surface* s;
+    SDL_Texture* t;
+};
 
+// Boarders around the grid squares are 3 pixel width or height and the squares are 8*8
 enum DIRECTIONS {LEFT, RIGHT, UP, DOWN};
 
 void createGrid(SDL_Surface* s);
@@ -17,7 +22,8 @@ void createCells(std::map<std::pair<int, int>, bool>& grid);
 void getNeighbour(int d, int& x, int& y, SDL_Surface* s);
 std::vector<int> checkNeighbours(const int x, const int y, std::map<std::pair<int, int>, bool>& cells);
 void dfsMazeGen(SDL_Surface* s, int x, int y, std::map<std::pair<int, int>, bool>& visited);
-SDL_Texture* createMaze();
-void destroyMaze(SDL_Texture* m);
+Maze createMaze();
+
+void destroyMaze(Maze m);
 
 #endif

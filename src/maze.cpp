@@ -9,22 +9,32 @@
 #include <stdlib.h>
 #include <time.h>
 
+const int g_CellCenterSize = 14;
+const int g_wallThickness = 3;
+const int g_CenterAndWall = g_CellCenterSize + g_wallThickness;
+
 // Create grid of squares
 void createGrid(SDL_Surface* s)
 {
     std::vector<SDL_Rect> walls;
+    // Columns
     for (int x = 0, y = 0; x <= WH; x+=17)
     {
         SDL_Rect r = {x, y, 3, WH};
         walls.push_back(r);
     }
-
+    // Rows
     for (int x = 0, y = 0; y <= WH; y+=17)
     {
         SDL_Rect r = {x, y, WH, 3};
         walls.push_back(r);
     }
+    // add Entrance and exit
+    std::vector<SDL_Rect> doors;
+    doors.push_back(SDL_Rect{3, 0, 14, 3});
+    doors.push_back(SDL_Rect{WH - 17, WH - 3, 17, 3});
     SDL_FillRects(s, walls.data(), walls.size(), SDL_MapRGB(s->format, 255, 255, 255));
+    SDL_FillRects(s, doors.data(), doors.size(), SDL_MapRGB(s->format, 0, 0, 0));
 }
 
 // Create map for all grid squares, each is represented by an x, y coordinate that is its top left corner,
@@ -103,7 +113,7 @@ void dfsMazeGen(SDL_Surface* s, int x, int y, std::map<std::pair<int, int>, bool
     }
 }
 
-SDL_Texture* createMaze()
+Maze createMaze()
 {
     // Initialize random seed
     srand(time(nullptr));
@@ -112,28 +122,32 @@ SDL_Texture* createMaze()
     if (s == nullptr)
     {
         std::cerr << "Failed to create surface: " << SDL_GetError() << std::endl;
-        return nullptr;
+        return {nullptr, nullptr};
     }
     createGrid(s);
     std::map<std::pair<int, int>, bool> cells;
     createCells(cells);
 
     dfsMazeGen(s, 428, 207, cells);
-    SDL_Texture* maze = SDL_CreateTextureFromSurface(g_Renderer, s);
-    if (maze == nullptr)
+    SDL_Texture* t = SDL_CreateTextureFromSurface(g_Renderer, s);
+    if (t == nullptr)
     {
         std::cerr << "Failed to create texture from surface: " << SDL_GetError() << std::endl;
-        return nullptr;
+        return {nullptr, nullptr};
     }
 
-    SDL_FreeSurface(s);
-    return maze;
+    return {s, t};
+
 }
 
-void destroyMaze(SDL_Texture* m)
+void destroyMaze(Maze m)
 {
-    if (m != nullptr)
+    if (m.t != nullptr)
     {
-        SDL_DestroyTexture(m);
+        SDL_DestroyTexture(m.t);
+    }
+    if (m.s != nullptr)
+    {
+        SDL_FreeSurface(m.s);
     }
 }

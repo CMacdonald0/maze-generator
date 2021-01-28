@@ -66,7 +66,7 @@ int main(int argc, char* args[])
 
     bool quit = false;
     SDL_Event event;
-    SDL_Texture* maze =  createMaze();
+    Maze maze =  createMaze();
     while (!quit)
     {
         // Get input
@@ -87,7 +87,7 @@ int main(int argc, char* args[])
         // Render
         SDL_SetRenderDrawColor(g_Renderer, 0, 0, 0, 255);
         SDL_RenderClear(g_Renderer);
-        SDL_RenderCopy(g_Renderer, maze, NULL, NULL);
+        SDL_RenderCopy(g_Renderer, maze.t, NULL, NULL);
         SDL_RenderPresent(g_Renderer);
     }
     destroyMaze(maze);
