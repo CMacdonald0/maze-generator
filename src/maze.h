@@ -8,22 +8,31 @@
 #include <vector>
 #include <map>
 
-struct Maze
+typedef std::map<std::pair<int, int>, bool>::iterator m_CellsIter;
+
+// Needs to be a odd number as well as a factor of 780
+const int g_CR = 12;
+
+enum DIRECTIONS {LEFT, RIGHT, UP, DOWN, LAST};
+
+class Maze
 {
-    SDL_Surface* s;
-    SDL_Texture* t;
+    private:
+        SDL_Surface* m_S;
+        SDL_Texture* m_T;
+        std::map<std::pair<int, int>, bool> m_Cells;
+        inline std::vector<int> checkNeighbours(const int x, const int y);
+        inline void removeWall(int d, int& x, int& y);
+
+    public:
+        Maze();
+        ~Maze();
+        SDL_Texture* getTexture() const;
+        void updateTexture();
+        void createGrid();
+        void createCells();
+        void dfsMazeGen(int x, int y);
+
 };
-
-// Boarders around the grid squares are 3 pixel width or height and the squares are 8*8
-enum DIRECTIONS {LEFT, RIGHT, UP, DOWN};
-
-void createGrid(SDL_Surface* s);
-void createCells(std::map<std::pair<int, int>, bool>& grid);
-void getNeighbour(int d, int& x, int& y, SDL_Surface* s);
-std::vector<int> checkNeighbours(const int x, const int y, std::map<std::pair<int, int>, bool>& cells);
-void dfsMazeGen(SDL_Surface* s, int x, int y, std::map<std::pair<int, int>, bool>& visited);
-Maze createMaze();
-
-void destroyMaze(Maze m);
 
 #endif

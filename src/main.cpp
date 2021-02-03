@@ -1,4 +1,3 @@
-// In current thas this is compiled for little endian
 #include <iostream>
 
 #include "globals.h"
@@ -25,7 +24,7 @@ bool init()
         std::cerr << "Failed to set texture filtering to linear: " << SDL_GetError() << std::endl;
     }
 
-    g_Window = SDL_CreateWindow("Maze-generator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WH, WH, SDL_WINDOW_SHOWN);
+    g_Window = SDL_CreateWindow("Maze-generator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, g_WH, g_WH, SDL_WINDOW_SHOWN);
     if (g_Window == nullptr)
     {
         std::cerr << "Failed to create window: " << SDL_GetError() << std::endl;
@@ -66,7 +65,7 @@ int main(int argc, char* args[])
 
     bool quit = false;
     SDL_Event event;
-    Maze maze =  createMaze();
+    Maze maze;
     while (!quit)
     {
         // Get input
@@ -82,14 +81,19 @@ int main(int argc, char* args[])
                 {
                     quit = true;
                 }
+                else if (event.key.keysym.sym == SDLK_s)
+                {
+                    // solveMaze(maze);
+                }
             }
         }
         // Render
         SDL_SetRenderDrawColor(g_Renderer, 0, 0, 0, 255);
         SDL_RenderClear(g_Renderer);
-        SDL_RenderCopy(g_Renderer, maze.t, NULL, NULL);
+        SDL_RenderCopy(g_Renderer, maze.getTexture(), NULL, NULL);
         SDL_RenderPresent(g_Renderer);
+        // solveMaze(maze);
+
     }
-    destroyMaze(maze);
     return 0;
 }
