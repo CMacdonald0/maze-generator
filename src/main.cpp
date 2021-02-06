@@ -81,9 +81,14 @@ int main(int argc, char* args[])
                 {
                     quit = true;
                 }
-                else if (event.key.keysym.sym == SDLK_s)
+                else if (event.key.keysym.sym == SDLK_e)
                 {
-                    // solveMaze(maze);
+                    maze.explore();
+                    maze.updateTexture();
+                }
+                else if (event.key.keysym.sym == SDLK_r)
+                {
+                    maze = Maze();
                 }
             }
         }
@@ -92,8 +97,6 @@ int main(int argc, char* args[])
         SDL_RenderClear(g_Renderer);
         SDL_RenderCopy(g_Renderer, maze.getTexture(), NULL, NULL);
         SDL_RenderPresent(g_Renderer);
-        // solveMaze(maze);
-
     }
     return 0;
 }

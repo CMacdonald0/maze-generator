@@ -10,7 +10,7 @@
 #include <time.h>
 
 Maze::Maze()
-    :m_S(nullptr), m_T(nullptr)
+    :m_S(nullptr), m_T(nullptr), m_StartX(g_CR + 1), m_StartY(g_CR + 1), m_EndX((g_WH - (g_CR * 2)) + 1), m_EndY((g_WH - (g_CR * 2)) + 1)
 {
     // Initialize random seed
     srand(time(nullptr));
@@ -25,10 +25,21 @@ Maze::Maze()
         createGrid();
         createCells();
 
-        int randomPoint = rand() % (int)m_Cells.size();
+        int randomPoint = rand() % m_Cells.size();
+        const int colLength = (g_WH - (g_CR * 2)) / g_CR;
+        int col = randomPoint / colLength;
+        // The column and the randomPoint must both be even to land on a path space
+        if (randomPoint % 2 != 0)
+        {
+            randomPoint--;
+            col = randomPoint / colLength;
+        }
+        // If the column is not even move to the same row but the previous column
+        if (col % 2 != 0)
+            randomPoint -= (colLength - 1);
 
         // There must be a better way to jump to a random point in the map
-        m_CellsIter it = m_Cells.begin();
+        CellsIter it = m_Cells.begin();
         for (int i = 0; i < randomPoint; i++, it++) {}
 
         int spx = it->first.first;
@@ -38,6 +49,12 @@ Maze::Maze()
 
         updateTexture();
     }
+}
+
+Maze Maze::operator=(const Maze& m)
+{
+    Maze newMaze;
+    return newMaze;
 }
 
 Maze::~Maze()
@@ -96,9 +113,9 @@ void Maze::createGrid()
 void Maze::createCells()
 {
     const int sp = g_CR + 1;
-    for (int x = sp, y = sp; y < g_WH - g_CR; y+=g_CR * 2)
+    for (int x = sp, y = sp; y < g_WH - g_CR; y+=g_CR)
     {
-        for (; x < g_WH - g_CR; x+=g_CR * 2)
+        for (; x < g_WH - g_CR; x+=g_CR)
         {
             m_Cells[{x, y}] = false;
         }
@@ -106,17 +123,22 @@ void Maze::createCells()
     }
 }
 
-// Return a vector with the values of DIRECTIONS enum of valid neighbours that have not been visited 
-inline std::vector<int> Maze::checkNeighbours(const int x, const int y)
+// Return a vector with the values of DIRECTIONS enum of valid neighbours, visitedStatus is set to false to check if the cell
+// has not been visited and to check if the cell has been viisted it is set to true
+inline std::vector<int> Maze::checkNeighbours(const int x, const int y, bool visitedStatus)
 {
+    int distance = g_CR;
+    if (!visitedStatus)
+        distance = g_CR * 2;
+    
     std::vector<int> n;
-    if (m_Cells.find({x - g_CR * 2, y}) != m_Cells.end() && m_Cells.at({x - g_CR * 2, y}) == false)
+    if (m_Cells.find({x - distance, y}) != m_Cells.end() && m_Cells.at({x - distance, y}) == visitedStatus)
         n.push_back(LEFT);
-    if (m_Cells.find({x + g_CR * 2, y}) != m_Cells.end() && m_Cells.at({x + g_CR * 2, y}) == false)
+    if (m_Cells.find({x + distance, y}) != m_Cells.end() && m_Cells.at({x + distance, y}) == visitedStatus)
         n.push_back(RIGHT);
-    if (m_Cells.find({x, y - g_CR * 2}) != m_Cells.end() && m_Cells.at({x, y - g_CR * 2}) == false)
+    if (m_Cells.find({x, y - distance}) != m_Cells.end() && m_Cells.at({x, y - distance}) == visitedStatus)
         n.push_back(UP);
-    if (m_Cells.find({x, y + g_CR * 2}) != m_Cells.end() && m_Cells.at({x, y + g_CR * 2}) == false)
+    if (m_Cells.find({x, y + distance}) != m_Cells.end() && m_Cells.at({x, y + distance}) == visitedStatus)
         n.push_back(DOWN);
     return n;
 }
@@ -125,26 +147,27 @@ inline std::vector<int> Maze::checkNeighbours(const int x, const int y)
 inline void Maze::removeWall(int d, int& x, int& y)
 {
     SDL_Rect r;
-    if (d == LEFT)
+    switch (d)
     {
-        r = {(x - g_CR) - 1, y - 1, g_CR, g_CR};
-        x -= g_CR * 2;
-    }
-    else if (d == RIGHT)
-    {
-        r = {(x + g_CR) - 1, y - 1, g_CR, g_CR};
-        x += g_CR * 2;
-    }
-    else if (d == UP)
-    {
-        r = {x - 1, (y - g_CR) - 1, g_CR, g_CR};
-        y -= g_CR * 2;
-    }
-    // Down
-    else
-    {
-        r = {x - 1, (y + g_CR) - 1, g_CR, g_CR};
-        y+= g_CR * 2;
+        case (LEFT):
+            m_Cells.at({x - g_CR, y}) = true;
+            r = {(x - g_CR) - 1, y - 1, g_CR, g_CR};
+            x -= g_CR * 2; 
+            break;
+        case (RIGHT):
+            m_Cells.at({x + g_CR, y}) = true;
+            r = {(x + g_CR) - 1, y - 1, g_CR, g_CR};
+            x += g_CR * 2; 
+            break;
+        case (UP):
+            m_Cells.at({x, y - g_CR}) = true;
+            r = {x - 1, (y - g_CR) - 1, g_CR, g_CR};
+            y -= g_CR * 2;
+            break;
+        default:
+            m_Cells.at({x, y + g_CR}) = true;
+            r = {x - 1, (y + g_CR) - 1, g_CR, g_CR};
+            y+= g_CR * 2; 
     }
 
     SDL_FillRect(m_S, &r, SDL_MapRGB(m_S->format, 0, 0, 0));
@@ -152,14 +175,66 @@ inline void Maze::removeWall(int d, int& x, int& y)
 
 void Maze::dfsMazeGen(int x, int y)
 {
+    // Store the current cell 
     m_Cells.at({x, y}) = true;
-    std::vector<int> n = checkNeighbours(x, y);
+    std::vector<int> n = checkNeighbours(x, y, false);
     // While there are still unvisited neighbours keep going
     while (!n.empty())
     {
         int rNeighbour = rand() % n.size();
         removeWall(n.at(rNeighbour), x, y);
         dfsMazeGen(x, y);
-        n = checkNeighbours(x, y);
+        n = checkNeighbours(x, y, false);
     }
+}
+
+// Move to the neighbour in the direction of d
+inline void Maze::moveToNeighbour(int d, int& x, int& y)
+{
+    switch (d)
+    {
+        case (LEFT):
+           x -= g_CR;
+           break;
+        case (RIGHT):
+            x += g_CR;
+            break;
+        case (UP):
+            y -= g_CR;
+            break;
+        default:
+            y += g_CR;
+    }
+}
+
+void Maze::dfsMazeExplore(int x, int y)
+{
+    m_Cells.at({x, y}) = false;
+    SDL_Rect r = {x, y, 8, 8};
+    SDL_FillRect(m_S, &r, SDL_MapRGB(m_S->format, 0, 0, 255));
+    std::vector<int> n = checkNeighbours(x, y, true);
+
+    // Keep searching if the exit has not been found
+    if (m_Parent.find({m_EndX, m_EndY}) == m_Parent.end() && !n.empty())
+    {
+        // Parent x and parent y
+        const int px = x, py = y;
+        for (int& neighbour: n)
+        {
+            moveToNeighbour(neighbour, x, y);
+            if (m_Parent.find({x, y}) == m_Parent.end())
+            {
+                m_Parent[{px, py}] = {x, y};
+                dfsMazeExplore(x, y);
+            }
+            // Reset position to the parent before moving to new neighbour
+            x = px, y = py;   
+        }
+    }
+}
+
+void Maze::explore()
+{
+    m_Parent[{m_StartX, m_StartY}] = {-1, -1};
+    dfsMazeExplore(m_StartX, m_StartY);
 }
